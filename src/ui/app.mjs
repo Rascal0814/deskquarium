@@ -55,7 +55,7 @@ function currentEnv(t) {
 
 // ---- 画面与自适应 ----
 const canvas = document.getElementById('pond')
-const renderer = createRenderer(canvas, { plain: boot.plain })
+const renderer = createRenderer(canvas, { plain: boot.plain, nightlight: boot.nightlight })
 const motion = createMotion()
 const hud = createHud()
 const chooser = createChooser()
@@ -232,6 +232,7 @@ host.on('weather', (w) => {
 host.on('insets', (i) => hud.setInsets(i))
 host.on('hud', (v) => hud.show(v))
 host.on('effects', (on) => renderer.setPlain(!on))
+host.on('nightlight', (on) => renderer.setNightlight(on))
 
 let lastHud = 0
 
@@ -252,6 +253,7 @@ const motionCtx = {
   lenUnit: 1,
   wind: 0,
   pointer, // 鼠标在哪：在鱼群旁边猛地一动，鱼会受惊
+  night: null, // 天黑了没有、小夜灯亮没亮（每帧从画面那边取）：夜里鱼要睡觉，有灯就待在灯光里
   onEat: (fishId, pellet) => {
     life.eat(state, fishId)
     renderer.addRipple(pellet.x, pellet.y, 0.8)
@@ -281,6 +283,7 @@ function frame(ts) {
   simulate(t, env)
   motionCtx.lenUnit = view.lenUnit
   motionCtx.wind = env.wind
+  motionCtx.night = renderer.nightState(env)
   motion.update(dt, motionCtx)
   updateTip(t)
   renderer.draw({ t: ts / 1000, dt, state, bodies: motion.bodies, food: motion.food, env, hover })

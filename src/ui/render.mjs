@@ -55,7 +55,8 @@ export function paintPreview(canvas, species) {
 // 水质和天气的雾、夜色全关，只剩背景图、鱼、气泡，画面和背景图本身一样清楚。
 export function createRenderer(canvas, opts = {}) {
   let plain = !!opts.plain
-  const g = canvas.getContext('2d', { alpha: false })
+  let nightlight = opts.nightlight !== false // 小夜灯：夜里右上角亮一盏灯（托盘里能关）
+  const g =canvas.getContext('2d', { alpha: false })
   let W = 1
   let H = 1
   let short = 1
@@ -640,10 +641,55 @@ export function createRenderer(canvas, opts = {}) {
 
     // 夜里压暗
     const night = 1 - env.light
+    // 小夜灯：挂在右上角，天快黑透了才慢慢亮起来，天亮前慢慢灭。0 = 没亮，1 = 全亮。
+    const { lamp, x: lx, y: ly, u } = nightState(env)
     if (night > 0.01 && !plain) {
       // 最暗压到四成：再暗的话整个晚上桌面都是灰蒙蒙一片，看着像图糊了（原来是 0.58）。
-      g.fillStyle = `rgba(3,10,32,${(night * 0.4).toFixed(3)})`
+      // 开着夜灯时远处再暗一点（屋里关了灯），灯照到的那一片几乎不压——有明有暗才看得出是一盏灯。
+      const dark = night * (0.4 + 0.22 * lamp)
+      if (lamp > 0) {
+        const film = g.createRadialGradient(lx, ly, short * 0.05, lx, ly, short * 1.05)
+        film.addColorStop(0, `rgba(3,10,32,${(dark * (1 - 0.92 * lamp)).toFixed(3)})`)
+        film.addColorStop(0.45, `rgba(3,10,32,${(dark * (1 - 0.5 * lamp)).toFixed(3)})`)
+        film.addColorStop(1, `rgba(3,10,32,${dark.toFixed(3)})`)
+        g.fillStyle = film
+      } else {
+        g.fillStyle = `rgba(3,10,32,${dark.toFixed(3)})`
+      }
       g.fillRect(0, 0, W, H)
+    }
+    if (lamp > 0) {
+      // 灯光：一团暖黄的光晕罩在水里，离灯越远越淡
+      const reach = short * 0.8
+      g.globalCompositeOperation = 'lighter'
+      const glow = g.createRadialGradient(lx, ly, 0, lx, ly, reach)
+      glow.addColorStop(0, `rgba(255,206,138,${(0.42 * lamp).toFixed(3)})`)
+      glow.addColorStop(0.25, `rgba(255,194,118,${(0.17 * lamp).toFixed(3)})`)
+      glow.addColorStop(0.6, `rgba(255,190,110,${(0.05 * lamp).toFixed(3)})`)
+      glow.addColorStop(1, 'rgba(255,186,104,0)')
+      g.fillStyle = glow
+      g.fillRect(lx - reach, 0, reach * 2, ly + reach)
+      g.globalCompositeOperation = 'source-over'
+      // 灯本身：从顶边垂下来一截杆子，一个小灯罩，底下一颗亮着的灯泡
+      g.globalAlpha = lamp
+      g.fillStyle = '#1b2228'
+      g.fillRect(lx - 2.5 * u, 0, 5 * u, ly - 16 * u)
+      g.beginPath()
+      g.moveTo(lx - 11 * u, ly - 18 * u)
+      g.lineTo(lx + 11 * u, ly - 18 * u)
+      g.lineTo(lx + 25 * u, ly)
+      g.lineTo(lx - 25 * u, ly)
+      g.closePath()
+      g.fill()
+      const bulb = g.createRadialGradient(lx, ly + 2 * u, 0, lx, ly + 2 * u, 20 * u)
+      bulb.addColorStop(0, 'rgba(255,250,232,1)')
+      bulb.addColorStop(0.4, 'rgba(255,224,160,0.95)')
+      bulb.addColorStop(1, 'rgba(255,200,120,0)')
+      g.fillStyle = bulb
+      g.beginPath()
+      g.ellipse(lx, ly + 2 * u, 20 * u, 9 * u, 0, 0, TAU)
+      g.fill()
+      g.globalAlpha = 1
     }
 
     // 雷：隔一阵闪一下（两连闪）
@@ -674,5 +720,18 @@ export function createRenderer(canvas, opts = {}) {
     bakeFloor()
   }
 
-  return { resize, draw, addRipple, splash, setBackground, setPlain }
+  function setNightlight(v) {
+    nightlight = !!v
+  }
+
+  // 画面上现在有多「夜」：dark 天黑透了没有（0~1，天快黑透才开始涨；画面不随昼夜变暗时一直是 0），
+  // lamp 小夜灯亮了几成，(x, y) 灯在哪，u 灯的大小单位。画面和鱼的作息（motion）都看这一个数，两边才对得上。
+  function nightState(env) {
+    const k = plain ? 0 : clamp((1 - env.light - 0.55) / 0.35, 0, 1)
+    const dark = k * k * (3 - 2 * k)
+    const u = (short / 1080) * 1.5
+    return { dark, lamp: nightlight ? dark : 0, x: W - 130 * u, y: 36 * u, u }
+  }
+
+  return { resize, draw, addRipple, splash, setBackground, setPlain, setNightlight, nightState }
 }

@@ -2,7 +2,7 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 // 主进程 → 页面的频道，只放行这几个。
-const CHANNELS = ['pointer', 'weather', 'visible', 'action', 'insets', 'flush', 'hud', 'background', 'effects']
+const CHANNELS = ['pointer', 'weather', 'visible', 'action', 'insets', 'flush', 'hud', 'background', 'effects', 'nightlight']
 
 contextBridge.exposeInMainWorld('host', {
   boot: () => ipcRenderer.invoke('pond:boot'),

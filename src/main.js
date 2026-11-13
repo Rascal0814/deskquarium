@@ -386,6 +386,20 @@ function buildTray() {
         config.effects = item.checked
         saveConfig()
         send('effects', item.checked)
+        buildTray() // 下面「小夜灯」那一项能不能点跟着变
+      },
+    },
+    {
+      // 天黑以后右上角亮一盏暖黄的小灯，照亮那一角；天亮自己灭。
+      // 夜色是「光影和天气效果」的一部分，那一项关了画面就不会变暗，也就没有灯可言。
+      label: '小夜灯（天黑自动亮）',
+      type: 'checkbox',
+      enabled: config.effects !== false,
+      checked: config.nightlight !== false,
+      click: (item) => {
+        config.nightlight = item.checked
+        saveConfig()
+        send('nightlight', item.checked)
       },
     },
     { label: '设置城市…', click: openCityWindow },
@@ -456,6 +470,7 @@ ipcMain.handle('pond:boot', (e) => {
     save: store.read(file('save.json')),
     hud: config.hud !== false,
     plain: dev.plain || config.effects === false,
+    nightlight: config.nightlight !== false,
     weather: latestWeather,
     background: loadBackground(),
     insets: insetsOf(pickDisplay()),

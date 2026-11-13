@@ -25,6 +25,12 @@ export function createMotion() {
   // 真鱼平时只是松松地待在一起，受了惊才紧紧抱团一起窜：alarm 就是「惊」的程度，鼠标在群旁边猛地一动拉满，几秒后消退。
   const schools = new Map() // 鱼种 → { x, y, tx, ty, pause, dir, moving, n, len, alarm }
   let lastPointer = null // 上一帧鼠标在哪，用来算它动得多快
+  // 夜里的作息（红绿灯白天活动、夜里歇着，靠眼睛结群）：
+  // sleep 天黑透了几成——越黑游得越慢、停得越久；lamp 小夜灯亮着时它在哪——鱼群待在灯光边上那一片；
+  // loose 黑着又没有灯的程度——看不见同伴，群就散了，各自慢慢漂。受惊、有饵料时照样醒过来。
+  let sleep = 0
+  let lamp = null
+  let loose = 0
   let W = 1
   let H = 1
 
@@ -64,7 +70,30 @@ export function createMotion() {
   }
 
   // 群的半径：鱼越多、这种鱼越松散，圈子越大；平时摊得开，受惊时缩成一团。
-  const spread = (school, habit) => school.len * (1.2 + 0.9 * Math.sqrt(school.n)) * (1.6 - habit.school) * (1.9 - 1.2 * school.alarm)
+  const spread = (school, habit) =>
+    school.len * (1.2 + 0.9 * Math.sqrt(school.n)) * (1.6 - habit.school) * (1.9 - 1.2 * school.alarm) * (1 + 0.9 * sleep + 0.8 * loose) // 夜里歇着时摊得更开
+
+  // 夜里亮着灯时鱼待的那一片：灯光的边上（灯在右上角，这一片在它左下方），不凑到灯泡底下——红绿灯怕强光。
+  function litRange(lo, hi) {
+    const short = Math.min(W, H)
+    const a = clamp(lamp.x - short * 0.45, lo, hi)
+    return [a, clamp(lamp.x + short * 0.03, a, hi)]
+  }
+
+  // 群接下来去哪：横着跨大半个缸，上下不出自己的水层；夜里亮着灯就只在灯光那一片、水层的中下部挪。
+  function schoolTarget(s, sp) {
+    const tall = s.len * sp.depth
+    const [top, bottom] = layerOf(sp.habit, H * WATER_TOP + tall * 0.7, floorY() - tall * 0.7)
+    const margin = Math.min(W * 0.2, s.len * 3)
+    if (lamp) {
+      const [lo, hi] = litRange(margin, W - margin)
+      s.tx = lo + Math.random() * (hi - lo)
+      s.ty = top + (0.2 + 0.6 * Math.random()) * (bottom - top)
+      return
+    }
+    s.tx = margin + Math.random() * (W - margin * 2)
+    s.ty = top + Math.random() * (bottom - top)
+  }
 
   // 每个群往前挪一步。dash：鼠标这一帧动得多快（像素 / 秒），不在画面上就是 0。
   function updateSchools(dt, state, pointer, dash) {
@@ -88,6 +117,15 @@ export function createMotion() {
       s.n = members.length
       s.len = mean((m) => m.lenPx)
       s.alarm = Math.max(0, s.alarm - dt / 7)
+      // 灯刚亮：不等歇够，这就往灯光那边去——这一趟是冲着光去的，游得比平时还利索，到了地方才犯困。
+      if (s.lit !== !!lamp) {
+        s.lit = !!lamp
+        s.toLamp = s.lit
+        if (lamp) {
+          schoolTarget(s, sp)
+          s.pause = 0
+        }
+      }
       // 受惊：鼠标在群旁边猛地一动（慢慢挪过来看鱼不算）。整群抱紧，往远离鼠标的那边窜。
       if (dash > 700 && s.alarm < 0.6 && members.some((m) => Math.hypot(m.x - pointer.x, m.y - pointer.y) < 140 + s.len * 2)) {
         s.alarm = 1
@@ -102,22 +140,18 @@ export function createMotion() {
         // 歇着：原地不动，鱼在周围各自转悠。歇够了挑下一个去处——横着跨大半个缸，上下不出自己的水层。
         s.moving = false
         s.pause -= dt
-        if (s.pause <= 0) {
-          const tall = s.len * sp.depth
-          const [top, bottom] = layerOf(sp.habit, H * WATER_TOP + tall * 0.7, floorY() - tall * 0.7)
-          const margin = Math.min(W * 0.2, s.len * 3)
-          s.tx = margin + Math.random() * (W - margin * 2)
-          s.ty = top + Math.random() * (bottom - top)
-        }
+        if (s.pause <= 0) schoolTarget(s, sp)
         continue
       }
       const dx = s.tx - s.x
       const dy = s.ty - s.y
       const d = Math.hypot(dx, dy)
       // 平时慢悠悠地挪（比鱼自己巡游慢得多，鱼跟得很从容）；受惊时快。
-      const v = (14 + 3 * Math.sqrt(s.len)) * sp.swim * (0.45 + 1.25 * s.alarm)
+      const calm = s.toLamp ? 0 : sleep * (1 - s.alarm) // 夜里挪得更慢、歇得更久
+      const v = (14 + 3 * Math.sqrt(s.len)) * sp.swim * (0.45 + 1.25 * s.alarm + (s.toLamp ? 0.4 : 0)) * (1 - 0.5 * calm)
       if (d < v * dt + 20) {
-        s.pause = (1.5 + Math.random() * (2 + 8 * sp.habit.idle)) * (s.alarm > 0.3 ? 0.3 : 1.6)
+        s.toLamp = false
+        s.pause = (1.5 + Math.random() * (2 + 8 * sp.habit.idle)) * (s.alarm > 0.3 ? 0.3 : 1.6) * (1 + 2 * calm)
       } else {
         s.x += (dx / d) * v * dt
         s.y += (dy / d) * v * dt
@@ -133,7 +167,7 @@ export function createMotion() {
     const [top, bottom] = layerOf(habit, box.minY, box.maxY)
     b.slot = null
     const school = schools.get(fish.species)
-    if (school && Math.random() < habit.school) {
+    if (school && Math.random() < habit.school * (1 - 0.85 * loose)) {
       // 跟着群：在群周围占个位置。群在赶路时位置偏前，免得老是掉头去够。
       const ahead = school.moving ? school.dir * Math.random() * 0.5 : 0
       b.slot = { x: ahead + (Math.random() - 0.5) * 2, y: (Math.random() - 0.5) * 0.9 }
@@ -146,14 +180,24 @@ export function createMotion() {
       b.peck = -1 // 到了地方再开始计时
       return
     }
+    if (sleep > 0.5) {
+      // 夜里自己待着：只在原地附近慢慢挪一点，沉在水层的中下部；亮着灯就往灯光那一片靠。
+      const [lo, hi] = lamp ? litRange(box.minX, box.maxX) : [box.minX, box.maxX]
+      b.tx = clamp(b.x + (Math.random() - 0.5) * W * 0.2, lo, hi)
+      b.ty = clamp(b.y + (Math.random() - 0.5) * H * 0.15, top + (bottom - top) * 0.3, bottom)
+      return
+    }
     // 自己逛：左右随便去，上下只小幅挪，不出自己的水层。
     b.tx = box.minX + Math.random() * (box.maxX - box.minX)
     b.ty = clamp(b.y + (Math.random() - 0.5) * H * 0.4, top, bottom)
   }
 
-  // ctx: { state, lenUnit, wind, pointer: { x, y, over }, onEat(fishId, pellet), onWaste(n) }
+  // ctx: { state, lenUnit, wind, pointer: { x, y, over }, night: { dark, lamp, x, y }, onEat(fishId, pellet), onWaste(n) }
   function update(dt, ctx) {
     const { state } = ctx
+    sleep = ctx.night?.dark ?? 0
+    lamp = (ctx.night?.lamp ?? 0) > 0.3 ? ctx.night : null
+    loose = sleep * (1 - (ctx.night?.lamp ?? 0))
     const m = metabolism(state.water.temp)
     const live = new Set()
     const pointer = ctx.pointer?.over ? ctx.pointer : null
@@ -243,8 +287,11 @@ export function createMotion() {
             pickTarget(b, fish, box)
             b.retarget = b.slot ? 3 + Math.random() * 5 : 6 + Math.random() * 14
             // 停下来悬一会儿：越爱发呆的鱼停得越勤、越久。跟着群赶路的时候不停，不然就掉队了。
-            const travelling = b.slot && schools.get(fish.species)?.moving
-            if (!travelling && Math.random() < 0.1 + 0.5 * habit.idle) b.rest = (2 + Math.random() * 5) * (0.5 + 1.5 * habit.idle)
+            const travelling = b.slot && mine?.moving
+            const calm = sleep * (1 - (mine?.alarm ?? 0)) // 夜里停得更勤、更久
+            if (!travelling && Math.random() < 0.1 + 0.5 * habit.idle + 0.45 * calm) {
+              b.rest = (2 + Math.random() * 5) * (0.5 + 1.5 * habit.idle) * (1 + 1.5 * calm)
+            }
           }
         }
         const gx = goal ? goal.x : b.tx
@@ -283,6 +330,9 @@ export function createMotion() {
         b.rest = Math.max(0, b.rest - dt)
         const above = goal && Math.abs(dx) < b.lenPx * 0.35 // 饵料就在头顶或脚下：别往前冲过头
         let target = cruise * (goal ? 2.3 : 1)
+        // 夜里慢悠悠的；有饵料、受了惊、正跟着群往灯光那边赶的时候照样快
+        const mates = schools.get(fish.species)
+        if (!goal && !(mates?.toLamp && b.slot)) target *= 1 - 0.5 * sleep * (1 - (mates?.alarm ?? 0))
         if (b.rest > 0) target *= 0.12
         if (b.peck > 0) target *= 0.08
         // 跟群：离自己的位置远就加把劲追，到位了就慢下来——一群鱼的快慢自然就齐了。受惊时整体再快一截。
