@@ -1,0 +1,186 @@
+/* 尺寸全用 CSS 像素：系统缩放 125% / 150% 时面板跟着放大，不用自己算。 */
+:root {
+  --inset-top: 0px;
+  --inset-right: 0px;
+  --inset-bottom: 0px;
+  --inset-left: 0px;
+}
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0b3b4a;
+  font: 13px/1.5 'Microsoft YaHei UI', 'Segoe UI', system-ui, sans-serif;
+  color: #eaf4f2;
+  user-select: none;
+  cursor: default;
+}
+#pond {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* 面板贴右下角，让开任务栏。平时半透明，鼠标靠近才变实。 */
+#hud {
+  position: fixed;
+  right: calc(var(--inset-right) + 16px);
+  bottom: calc(var(--inset-bottom) + 16px);
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  opacity: 0.6;
+  transition: opacity 0.25s;
+}
+#hud.near, #hud:hover { opacity: 1; }
+#hud[hidden] { display: none; }
+
+.card, #book, #toast, #tip {
+  background: rgba(8, 30, 38, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+}
+.card { padding: 10px 12px; }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+.row.top { justify-content: space-between; font-size: 14px; }
+.k { opacity: 0.7; }
+#day, #wt, #count { opacity: 0.85; }
+#wt { margin-left: auto; }
+#qn { width: 24px; text-align: right; font-variant-numeric: tabular-nums; }
+
+.bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+.bar i { display: block; height: 100%; border-radius: 3px; background: #5ed0b8; }
+.bar i.warn { background: #e8b84a; }
+.bar i.bad { background: #e2684a; }
+
+.btns { margin-top: 6px; gap: 6px; }
+button {
+  flex: 1;
+  padding: 5px 0;
+  font: inherit;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  cursor: pointer;
+}
+button:hover, button.hot { background: rgba(255, 255, 255, 0.24); }
+button[hidden] { display: none; }
+
+#last {
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#toast {
+  padding: 8px 12px;
+  background: rgba(20, 60, 64, 0.9);
+  border-color: rgba(120, 220, 200, 0.4);
+}
+
+/* 鱼册 */
+#book {
+  padding: 8px 10px;
+  max-height: calc(100vh - var(--inset-top) - var(--inset-bottom) - 260px);
+  overflow: hidden;
+  font-size: 12px;
+}
+#book .fish {
+  display: grid;
+  grid-template-columns: 10px 1fr 54px 40px 40px;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+}
+#book .fish.head { opacity: 0.6; height: 18px; }
+#book .dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.4); box-sizing: border-box; }
+#book .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#book .name small { opacity: 0.65; margin-left: 4px; }
+#book .num { text-align: right; font-variant-numeric: tabular-nums; }
+#book .mini { height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.15); overflow: hidden; }
+#book .mini i { display: block; height: 100%; background: #5ed0b8; }
+#book .mini i.warn { background: #e8b84a; }
+#book .mini i.bad { background: #e2684a; }
+#book .fish.dead { opacity: 0.6; grid-template-columns: 10px 1fr 60px; }
+#book .fish.dead button { padding: 1px 0; font-size: 12px; }
+#book .empty { opacity: 0.7; padding: 4px 0; }
+
+/* 悬停在鱼身上的提示 */
+#tip {
+  position: fixed;
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: pre;
+  pointer-events: none;
+}
+#tip[hidden] { display: none; }
+
+/* 选鱼界面：居中的一张面板，每种鱼一张卡片。屏幕窄了卡片自己换行。 */
+#chooser {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+#chooser[hidden] { display: none; }
+.sheet {
+  pointer-events: auto;
+  width: min(880px, calc(100vw - 48px));
+  max-height: calc(100vh - var(--inset-top) - var(--inset-bottom) - 48px);
+  overflow: hidden;
+  padding: 20px 24px;
+  background: rgba(8, 30, 38, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  box-sizing: border-box;
+}
+.sheet h1 { margin: 0; font-size: 20px; font-weight: 600; }
+.sheet > p { margin: 4px 0 14px; opacity: 0.7; }
+#species {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.card-fish {
+  padding: 10px 12px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+.card-fish .pic {
+  display: block;
+  width: 100%;
+  height: 84px;
+  border-radius: 8px;
+  background: linear-gradient(#2a93b8, #0f5f86);
+}
+.card-fish h2 { margin: 8px 0 2px; font-size: 15px; font-weight: 600; }
+.card-fish p { margin: 0; font-size: 12px; opacity: 0.8; min-height: 36px; }
+.card-fish p.facts { opacity: 0.55; min-height: 36px; }
+.stepper { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.stepper button { flex: 0 0 34px; padding: 3px 0; font-size: 16px; line-height: 1.2; }
+.stepper .n { flex: 1; text-align: center; font-size: 16px; font-variant-numeric: tabular-nums; }
+.foot { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+.foot span { flex: 1; opacity: 0.8; }
+.foot button { flex: 0 0 auto; padding: 7px 18px; }
+button.primary { background: #1f8a7d; border-color: #35b3a3; }
+button.primary:hover, button.primary.hot { background: #27a394; }
+button:disabled { opacity: 0.4; cursor: default; }

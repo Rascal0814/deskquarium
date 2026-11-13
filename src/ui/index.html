@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-p2wJOWN8rB9YvERkPNjvIDxkJTxs+fOHzf3zG8iFAQc='; style-src 'self'; img-src 'self' data: blob:" />
+    <title>桌面鱼池</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <canvas id="pond"></canvas>
+    <div id="tip" hidden></div>
+
+    <aside id="hud">
+      <div id="toast" hidden></div>
+      <div id="book" hidden></div>
+      <div class="card">
+        <div class="row top">
+          <span id="wx"></span>
+          <span id="day"></span>
+        </div>
+        <div class="row">
+          <span class="k">水质</span>
+          <div class="bar"><i id="q"></i></div>
+          <span id="qn"></span>
+          <span id="wt"></span>
+        </div>
+        <div class="row" id="count"></div>
+        <div class="row btns">
+          <button data-act="feed">喂食</button>
+          <button data-act="water">换水</button>
+          <button data-act="breed">繁殖</button>
+          <button data-act="stock">添鱼</button>
+          <button data-act="book">鱼册</button>
+        </div>
+        <div id="last"></div>
+      </div>
+    </aside>
+
+    <section id="chooser" hidden>
+      <div class="sheet">
+        <h1 id="chooser-title"></h1>
+        <p id="chooser-note"></p>
+        <div id="species"></div>
+        <div class="foot">
+          <span id="chooser-sum"></span>
+          <button data-act="pick-cancel">先不放</button>
+          <button data-act="pick-ok" id="chooser-ok" class="primary">放进鱼缸</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- three.js（画 3D 的鱼）装在 node_modules 里；它内部按名字互相引用，这张表告诉页面名字对应哪个文件。
+         改了这一行的内容，上面 Content-Security-Policy 里的 sha256 要跟着重算。 -->
+    <script type="importmap">{"imports":{"three":"../../node_modules/three/build/three.module.js","three/addons/":"../../node_modules/three/examples/jsm/"}}</script>
+    <script type="module" src="app.mjs"></script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "deskquarium",
+  "version": "0.1.0",
+  "private": true,
+  "description": "桌面鱼池：整个桌面就是鱼缸，联动当天天气，选鱼 / 喂食 / 换水 / 繁殖",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node scripts/launch.js",
+    "dev": "node scripts/launch.js --window",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "electron": "44.1.0"
+  },
+  "dependencies": {
+    "koffi": "^2.9.0",
+    "three": "^0.187.0"
+  }
+}

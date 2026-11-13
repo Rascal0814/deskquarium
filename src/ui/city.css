@@ -1,0 +1,13 @@
+body {
+  margin: 0;
+  padding: 20px 22px;
+  font: 14px/1.6 'Microsoft YaHei UI', 'Segoe UI', system-ui, sans-serif;
+  color: #1c2b2e;
+  background: #f3f7f6;
+}
+.line { display: flex; gap: 8px; margin-top: 8px; }
+input { flex: 1; padding: 6px 8px; font: inherit; border: 1px solid #b7c7c4; border-radius: 6px; }
+button { padding: 6px 16px; font: inherit; color: #fff; background: #1f8a7d; border: 0; border-radius: 6px; cursor: pointer; }
+button:disabled { opacity: 0.6; }
+#msg { min-height: 22px; margin: 10px 0 0; color: #a8442c; }
+#msg.ok { color: #1f7a4f; }

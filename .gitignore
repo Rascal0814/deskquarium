@@ -1,0 +1,10 @@
+# 依赖：npm install 会装回来
+node_modules/
+
+# 下载来的模型原件（打包前的）。作者的授权不一定允许再分发，只把打包好、授权允许的 .glb 放进 src/ui/fish3d/
+models/
+
+# 系统和编辑器的杂物
+Thumbs.db
+.DS_Store
+*.log

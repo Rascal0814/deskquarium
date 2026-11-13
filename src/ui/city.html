@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'" />
+    <title>设置城市</title>
+    <link rel="stylesheet" href="city.css" />
+  </head>
+  <body>
+    <form id="form">
+      <label for="name">鱼池跟哪座城市的天气走？</label>
+      <div class="line">
+        <input id="name" autofocus placeholder="比如：东京、杭州、Osaka" maxlength="60" />
+        <button type="submit">确定</button>
+      </div>
+      <p id="msg"></p>
+    </form>
+    <script src="city.js"></script>
+  </body>
+</html>
