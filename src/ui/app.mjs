@@ -24,7 +24,12 @@ const now = () => (dev.fast > 1 ? realStart + (performance.now() - perfStart) * 
 // 没有存档就是一个空鱼缸：养什么鱼由用户在选鱼界面里挑（见最下面）。
 let state = boot.save && boot.save.version === 1 ? boot.save : null
 if (!state) {
-  state = life.createPond(now(), rng, dev.demo ? { neon: 12 } : undefined)
+  // --demo 给 12 条红绿灯；--demo=goldfish:4,neon:8 自己点鱼种和条数。
+  const stock =
+    typeof dev.demo === 'string'
+      ? Object.fromEntries(dev.demo.split(',').map((s) => s.split(':')).map(([k, n]) => [k, Number(n) || 1]))
+      : { neon: 12 }
+  state = life.createPond(now(), rng, dev.demo ? stock : undefined)
   if (dev.demo) {
     // 演示：直接给一缸大小不一的鱼，看画面用。
     state.fish.forEach((f, i) => {

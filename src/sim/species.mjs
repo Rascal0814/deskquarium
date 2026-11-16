@@ -18,7 +18,7 @@ export const SPECIES = {
     habit: { layer: [0.25, 1], school: 0.35, idle: 0.2, forage: 0.5 }, // 三三两两慢慢巡游，爱在池底翻找
   },
   goldfish: {
-    label: '金鱼', blurb: '圆滚滚、大尾巴，皮实好养',
+    label: '土佐金', blurb: '金鱼的一种，尾鳍向两边摊开再往前翻，游得慢',
     maxLength: 22, growthK: 0.05, fryLength: 2, matureLength: 9, lifespanDays: 150, clutch: [2, 4],
     swim: 0.7, depth: 0.42, belly: 0.2, tail: 1.9, tailShape: 'fork', fin: 1.5, barbel: false,
     habit: { layer: [0.3, 1], school: 0.3, idle: 0.3, forage: 0.7 }, // 不成群但爱凑堆，一天到晚在池底啄
@@ -45,7 +45,7 @@ export const SPECIES = {
 
 // 现在能养的鱼种：选鱼界面只列这几种。
 // 鱼要一种一种做到逼真（有了像样的 3D 模型）才放出来，其余的规则和画法都留着，做好一种往这里加一种。
-export const STOCKABLE = ['neon']
+export const STOCKABLE = ['neon', 'goldfish']
 
 export const COLORS = {
   white: '#f3ede2',
@@ -74,10 +74,10 @@ const VARIETIES = {
     { label: '白写', base: 'white', marks: [['black', 2, 4]] },
   ],
   goldfish: [
-    { label: '红金', base: 'orange', marks: [] },
+    // 模型是一条红白的土佐金，只有这一套贴图：红白照原样，全红是整体压一层橙红（fish3d.mjs 的 tones）。
+    // 黑的、樱花的它画不出来，不列。
     { label: '红白', base: 'white', marks: [['orange', 1, 3]] },
-    { label: '黑金', base: 'black', marks: [['gold', 1, 2]] },
-    { label: '樱花', base: 'cream', marks: [['red', 1, 3]] },
+    { label: '全红', base: 'orange', marks: [] },
   ],
   angelfish: [
     {

@@ -17,8 +17,12 @@ const QUARTER = Math.PI / 2
 //   clip：用哪段骨骼动画（不填用第一段）；模型没带动画的由着色器让身体摆
 //   tones：花色（genome.base）→ 整体压一层什么颜色，比如 { silver: '#c9d3d6', black: '#55555e' }。
 //     一个模型只有一套贴图，花色只能靠色调区分；没列出来的花色用原样。红绿灯只有一种花色，用不上
+//   opaque：身体和鳍分开做的模型，列出身体的材质名（见 prepare）
+//   alphaPow：鳍的不透明度取这么多次方，小于 1 就更实。有的作者把鳍做得只有一两成不透明，
+//     单看模型是一层轻纱，放进有颜色的水里就只剩一片水色的薄膜，真鱼的鳍没有那么透
 const MODELS = {
   neon: { file: 'neon.glb', rot: [0, QUARTER, 0], bodyFrac: 0.9 },
+  goldfish: { file: 'goldfish.glb', rot: [0, QUARTER, 0], bodyFrac: 0.64, opaque: ['M_TosakinBody'], alphaPow: 0.5, tones: { orange: '#ff9c6b' } },
 }
 
 // 没带骨骼动画的模型：在顶点着色器里让身体左右弯（《ABZÛ》的做法）。
@@ -59,6 +63,18 @@ function addSwimShader(material, uniforms) {
         }`,
       )
   }
+}
+
+// 半透明的材质：贴图里的不透明度取 power 次方（见 MODELS 的 alphaPow）。
+function addAlphaCurve(material, power) {
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <map_fragment>',
+      `#include <map_fragment>
+      diffuseColor.a = pow(diffuseColor.a, ${power.toFixed(3)});`,
+    )
+  }
+  material.customProgramCacheKey = () => `alphaPow${power}` // 不同的次方是不同的着色器，不能共用编译结果
 }
 
 function createFishLayer() {
@@ -139,10 +155,19 @@ function createFishLayer() {
       o.frustumCulled = false // 顶点会被骨骼 / 着色器挪动，包围盒不准
       // 鳍是半透明的，所以作者把整条鱼都标成了「半透明」；半透明的东西默认不记远近，
       // 嘴里、鳃里的面会透到外面来（嘴边一道黑线）。让带贴图的材质照常记远近，全透明的像素直接丢掉。
-      if (o.material.transparent && o.material.map) {
+      // 上面那招只适合整条鱼是一张皮的模型。身体和鳍分开做的模型（cfg.opaque 列出身体的材质名）：
+      // 身体按不透明画，鳍照常半透明、不记远近——不然鳍先画的时候会把后面的身体挡掉，鳍底下露出一块背景。
+      if (cfg.opaque) {
+        if (cfg.opaque.includes(o.material.name)) {
+          o.material.transparent = false
+          o.material.depthWrite = true
+        }
+      } else if (o.material.transparent && o.material.map) {
         o.material.depthWrite = true
         o.material.alphaTest = 0.03
       }
+      // 眼角膜这类「透光」材质要多画一整遍场景才算得出来，壁纸不值得；当成普通的半透明就行。
+      if (o.material.transmission > 0) o.material.transmission = 0
     })
     if (!skinned) {
       // 没骨骼：把摆正、缩放都烤进顶点里，着色器里的坐标就是「头朝 +x、全长 1」。
@@ -171,6 +196,7 @@ function createFishLayer() {
       if (!o.isMesh) return
       o.material = o.material.clone()
       if (!m.skinned) addSwimShader(o.material, uniforms)
+      if (m.cfg.alphaPow && o.material.transparent && o.material.map) addAlphaCurve(o.material, m.cfg.alphaPow)
       paints.push({ material: o.material, base: o.material.color.clone() })
     })
     let mixer = null

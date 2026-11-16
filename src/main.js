@@ -11,7 +11,7 @@ const { SCENES, DEFAULT_SCENE } = require('./scenes')
 // ---- 启动参数 ----
 // --window            普通窗口，不挂桌面（开发用，也能拖窗口大小看自适应）
 // --save-dir=<目录>   存档换个地方放（开发用，不动真存档）
-// --fast=<倍数>  --demo  --weather=<种类>  --light=<0~1>  --shot=<png>  --shot-after=<毫秒>
+// --fast=<倍数>  --demo[=鱼种:条数,…]  --weather=<种类>  --light=<0~1>  --shot=<png>  --shot-after=<毫秒>
 // --poke=<x,y;x,y>  --always-draw  --plain
 //   这几个会让时间和存档变假（或只为调试），所以只在给了 --save-dir 时才认。
 const flags = {}
@@ -25,7 +25,7 @@ if (sandboxed) app.setPath('userData', path.resolve(flags['save-dir']))
 const dev = sandboxed
   ? {
       fast: Number(flags.fast) > 0 ? Number(flags.fast) : 1,
-      demo: !!flags.demo,
+      demo: flags.demo ?? false,
       weather: typeof flags.weather === 'string' ? flags.weather : null,
       light: flags.light != null && flags.light !== true ? Number(flags.light) : null,
       plain: !!flags.plain,

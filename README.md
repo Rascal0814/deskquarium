@@ -13,7 +13,7 @@
 - **跟着真实世界走**：昼夜按日出日落渐变，晴、阴、雨、雪、雾、雷都会画出来，水温跟着气温变。
 - **背景随你**：自带三张水草缸，也可以跟随系统壁纸或自选图片。
 
-现在能养的只有红绿灯——鱼要一种一种做到逼真才放出来，见[已知边界](#已知边界)。
+现在能养红绿灯和土佐金——鱼要一种一种做到逼真才放出来，见[已知边界](#已知边界)。
 
 ## 运行
 
@@ -67,9 +67,9 @@ npm test             # 养鱼规则的用例
 | 鱼种 | 最大体长 | 成年体长 | 寿命 | 一窝 | 习性 | 现在能养 |
 |---|---|---|---|---|---|---|
 | 红绿灯 | 4cm | 2.2cm（约一周） | 约 100 天 | 3 ～ 5 | 中下层，总是一群待在一起 | 是 |
+| 土佐金（金鱼） | 22cm | 9cm | 约 150 天 | 2 ～ 4 | 爱凑堆，老在池底啄食 | 是 |
 | 孔雀鱼 | 6cm | 3cm（约一周） | 约 90 天 | 3 ～ 6 | 上层，松散成群，一刻不停 | 否 |
 | 神仙鱼 | 15cm | 7cm | 约 180 天 | 2 ～ 4 | 中层，常悬着不动 | 否 |
-| 金鱼 | 22cm | 9cm | 约 150 天 | 2 ～ 4 | 爱凑堆，老在池底啄食 | 否 |
 | 锦鲤 | 70cm | 25cm（约 12 天） | 约 240 天 | 2 ～ 4 | 三三两两巡游，爱在池底翻找 | 否 |
 
 画面上鱼的大小按体长的 0.6 次方算（照实画的话小鱼苗只剩一个点），鱼册和提示里的厘米数是真的。
@@ -107,6 +107,7 @@ src/ui/fish3d/       鱼的 3D 模型（每种一个 .glb），来源和授权�
 src/ui/backgrounds/  自带背景的图
 scripts/launch.js    启动（剥掉 ELECTRON_RUN_AS_NODE）
 scripts/pack-model.mjs   把下载来的模型（scene.gltf + scene.bin + 贴图）打成一个 .glb
+scripts/shrink-textures.py   打包前把过大的贴图缩小（要 Python 和 Pillow）
 test/                规则的用例
 ```
 
@@ -122,7 +123,9 @@ test/                规则的用例
    **先看授权**：CC0、CC BY 可以随代码公开；Sketchfab Standard 不允许再分发模型文件，不能进仓库。
 2. 解压到 `models/<名字>/`（这个目录不进仓库）。
 3. `node scripts/pack-model.mjs models/<名字>/scene.gltf src/ui/fish3d/<鱼种>.glb`
-4. 在 [src/ui/fish3d.mjs](src/ui/fish3d.mjs) 的 `MODELS` 里登记：怎么摆正、体长比例、用哪段动画。
+   贴图太大的（土佐金原件是四张 4096，合起来 68MB）先缩小再打包，用法见 `scripts/shrink-textures.py` 开头。
+4. 在 [src/ui/fish3d.mjs](src/ui/fish3d.mjs) 的 `MODELS` 里登记：怎么摆正、体长比例、用哪段动画，
+   身体和鳍是不是分开的材质、鳍要不要调实、有几种花色。
 5. 在 [src/ui/fish3d/CREDITS.md](src/ui/fish3d/CREDITS.md) 里写上来源和授权。
 6. 把鱼种加进 [src/sim/species.mjs](src/sim/species.mjs) 的 `STOCKABLE`，选鱼界面才会列出来。
 
@@ -167,7 +170,7 @@ test/                规则的用例
 ```
 --window                 普通窗口模式
 --save-dir=<目录>        存档放到别处
---demo                   没有存档时直接给一缸大小不一的鱼
+--demo                   没有存档时直接给一缸大小不一的鱼（12 条红绿灯）；--demo=goldfish:6,neon:8 自己点鱼种和条数
 --weather=clear|partly|cloudy|fog|drizzle|rain|snow|thunder   指定天气（不联网）
 --light=<0~1>            指定亮度（0 是深夜）
 --fast=<倍数>            时间加速
@@ -179,11 +182,13 @@ test/                规则的用例
 
 ## 已知边界
 
-- **现在只能养红绿灯**。鱼要看着像真的，得用 3D 模型：图片试过三版（矢量填色、逐像素算光照和鳞片、真鱼照片抠图），
+- **现在只能养红绿灯和土佐金**。鱼要看着像真的，得用 3D 模型：图片试过三版（矢量填色、逐像素算光照和鳞片、真鱼照片抠图），
   放进鱼缸都是一眼贴图——光是死的、只有一个姿势、掉头像翻纸片。所以选鱼界面只列做好了模型的鱼种
-  （`species.mjs` 的 `STOCKABLE`），做好一种加一种。其余四种的规则和习性都在代码里，画法还是代码画的贴图，只是不让选。
-- 红绿灯的鱼苗是缩小的成鱼，没有单独的幼鱼样子。
-- 习性只有红绿灯的成群在画面上验过；其余几种的数值是照真鱼的脾气填的。没有「趴在池底不动」这种行为，等养到底栖的鱼再加。
+  （`species.mjs` 的 `STOCKABLE`），做好一种加一种。其余三种的规则和习性都在代码里，画法还是代码画的贴图，只是不让选。
+- 鱼苗是缩小的成鱼，没有单独的幼鱼样子。
+- 土佐金只有一个模型、一套贴图：花色只有红白（原样）和全红（整体压一层橙红）两种；
+  代码里给它的色斑基因照常遗传，但画面上看不出来。鳍比模型原件调实了（原件只有一两成不透明，放进水里像一层膜）。
+- 习性只有红绿灯的成群在画面上验过；其余几种（包括土佐金）的数值是照真鱼的脾气填的。没有「趴在池底不动」这种行为，等养到底栖的鱼再加。
 - 性能数字没有：换成 3D 之后没有重新量过占用。
 - 只铺一块屏幕（多屏时托盘里选哪块），不跨屏。
 - explorer 重启后会自动重新挂上（每秒检查一次），这条没实测过。
@@ -193,7 +198,9 @@ test/                规则的用例
 ## 素材和依赖
 
 - 红绿灯模型：[Paracheirodon Innesi _ Tetra Neon](https://sketchfab.com/3d-models/paracheirodon-innesi---tetra-neon-2fabf5db754746b7b81ebfa0bbe99161)，
-  作者 BlueMesh，[CC BY 4.0](http://creativecommons.org/licenses/by/4.0/)。详见 [CREDITS.md](src/ui/fish3d/CREDITS.md)。
+  作者 BlueMesh，[CC BY 4.0](http://creativecommons.org/licenses/by/4.0/)。
+- 土佐金模型：[Tosakin goldfish](https://sketchfab.com/3d-models/tosakin-goldfish-b2f0681c1e2145bcb0289f03ed75ea37)，
+  作者 somitsu，[CC BY 4.0](http://creativecommons.org/licenses/by/4.0/)，贴图缩小过。两个模型的详情见 [CREDITS.md](src/ui/fish3d/CREDITS.md)。
 - 三张自带背景是 AI 生成的图。
 - [Electron](https://www.electronjs.org/)、[three.js](https://threejs.org/)、[koffi](https://koffi.dev/)（调 Win32）。
 - 天气数据：[Open-Meteo](https://open-meteo.com/)、[MET Norway](https://api.met.no/)。
